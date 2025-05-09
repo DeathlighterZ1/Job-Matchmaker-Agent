@@ -84,9 +84,10 @@ class JobMatchmaker:
             
             if "results" not in jobs_data:
                 continue
-                
+            
             for job in jobs_data["results"]:
                 score = 0
+                matched_skills = []
                 
                 # Match job title
                 if "title" in job:
@@ -99,6 +100,7 @@ class JobMatchmaker:
                     for skill in user["skills"]:
                         if skill.lower() in job["description"].lower():
                             skill_score += 10
+                            matched_skills.append(skill)
                     score += min(skill_score, 50)
                 
                 # Match location
@@ -115,7 +117,8 @@ class JobMatchmaker:
                 if score > 60:  # Only include jobs with good match
                     matched_jobs.append({
                         "job": job,
-                        "score": score
+                        "score": score,
+                        "matched_skills": matched_skills
                     })
         
         # Sort by score and return top 5
@@ -135,6 +138,8 @@ class JobMatchmaker:
             if "location" in job and "area" in job["location"]:
                 email_body += f"  Location: {', '.join(job['location']['area'])}\n"
             email_body += f"  Match Score: {match['score']:.1f}%\n"
+            if match["matched_skills"]:
+                email_body += f"  Matched Skills: {', '.join(match['matched_skills'])}\n"
             if "redirect_url" in job:
                 email_body += f"  Apply here: {job['redirect_url']}\n"
             email_body += "\n"
@@ -263,8 +268,34 @@ with tab1:
 with tab2:
     st.header("Run Job Matching")
     if st.button("Run Job Matching"):
-        results = matchmaker.run_matching_for_all_users()
-        st.text_area("Results", results, height=300)
+        if not matchmaker.users:
+            st.error("No users added yet. Please add users in the 'Add User' tab first.")
+        else:
+            results = []
+            for user in matchmaker.users:
+                st.subheader(f"Results for {user['name']}")
+                st.write(f"Skills: {', '.join(user['skills'])}")
+                
+                matched_jobs = matchmaker.match_jobs_for_user(user)
+                
+                if not matched_jobs:
+                    st.warning(f"No matching jobs found for {user['name']}")
+                else:
+                    for i, match in enumerate(matched_jobs, 1):
+                        job = match["job"]
+                        with st.expander(f"Match #{i}: {job.get('title', 'Untitled Position')} - Score: {match['score']:.1f}%"):
+                            st.write(f"**Company:** {job.get('company', {}).get('display_name', 'Unknown Company')}")
+                            if "location" in job and "area" in job["location"]:
+                                st.write(f"**Location:** {', '.join(job['location']['area'])}")
+                            if match["matched_skills"]:
+                                st.write(f"**Matched Skills:** {', '.join(match['matched_skills'])}")
+                            if "redirect_url" in job:
+                                st.write(f"**Apply here:** {job['redirect_url']}")
+                
+                result = matchmaker.send_email_notification(user, matched_jobs)
+                results.append(f"{user['name']}: {result}")
+            
+            st.text_area("Email Notification Results", "\n".join(results), height=100)
 
 # Tab 3: Search Available Jobs
 with tab3:
@@ -293,6 +324,7 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
 
 
 
