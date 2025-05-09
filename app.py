@@ -290,7 +290,7 @@ with tab2:
         if user:
             # Display user's preferred roles as selectable options
             st.subheader("Preferred Job Roles")
-            selected_role = st.selectbox("Select role to search", user["roles"])
+            selected_role = st.selectbox("Job Title", user["roles"])
             
             if st.button("Find Matching Jobs", type="primary"):
                 with st.spinner(f"Searching for '{selected_role}' jobs in '{user['location']}'..."):
@@ -328,9 +328,6 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
-
-
-
 
 
 
