@@ -15,6 +15,8 @@ ADZUNA_APP_ID = st.secrets["ADZUNA_APP_ID"]
 ADZUNA_API_KEY = st.secrets["ADZUNA_API_KEY"]
 RESEND_API_KEY = st.secrets["RESEND_API_KEY"]
 
+print(f"API credentials loaded: Adzuna ID={ADZUNA_APP_ID[:4]}..., Key={ADZUNA_API_KEY[:4]}..., Resend={RESEND_API_KEY[:4]}...")
+
 class JobMatchmaker:
     def __init__(self):
         self.users = []
@@ -54,9 +56,12 @@ class JobMatchmaker:
         try:
             # Make API request
             url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
+            print(f"Making request to: {url} with params: {params}")
             response = requests.get(url, params=params)
+            print(f"Response status code: {response.status_code}")
             response.raise_for_status()  # Raise exception for HTTP errors
             data = response.json()
+            print(f"Response data: {data.keys()}")
             
             # Cache the results
             self.job_cache[cache_key] = {
@@ -66,8 +71,9 @@ class JobMatchmaker:
             
             return data
         except Exception as e:
-            print(f"Error fetching jobs: {str(e)}")
-            return {"results": [], "error": str(e)}
+            error_msg = f"Error fetching jobs: {str(e)}"
+            print(error_msg)
+            return {"results": [], "error": error_msg}
     
     def match_jobs_for_user(self, user):
         matched_jobs = []
@@ -165,10 +171,22 @@ class JobMatchmaker:
 
     def search_available_jobs(self, query, location, country="gb"):
         """Search for available jobs and return formatted results"""
+        if not query or not location:
+            return "Please provide both job title and location."
+        
+        st.write(f"Searching for '{query}' in '{location}' ({country})...")
         jobs_data = self.fetch_jobs(query, location, country)
+        
+        # Debug the API response
+        st.write(f"API response keys: {list(jobs_data.keys())}")
+        
+        if "error" in jobs_data:
+            return f"Error: {jobs_data['error']}"
         
         if "results" not in jobs_data or not jobs_data["results"]:
             return "No jobs found for the given criteria."
+        
+        st.write(f"Found {len(jobs_data['results'])} jobs")
         
         results = []
         for job in jobs_data["results"][:10]:  # Limit to top 10 results
@@ -262,3 +280,11 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
+
+
+
+
+
+
+
