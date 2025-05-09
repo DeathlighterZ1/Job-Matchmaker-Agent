@@ -201,7 +201,10 @@ class JobMatchmaker:
                 job_info += f"<p><strong>📍 Location:</strong> {', '.join(job['location']['area'])}</p>"
             
             if "salary_min" in job and "salary_max" in job:
-                job_info += f"<p><strong>💰 Salary:</strong> {job.get('salary_min')} - {job.get('salary_max')} per {job.get('salary_is_predicted', 'year')}</p>"
+                salary_period = job.get('salary_is_predicted', 'year')
+                if salary_period == "1":
+                    salary_period = "year"
+                job_info += f"<p><strong>💰 Salary:</strong> ${job.get('salary_min'):,.2f} - ${job.get('salary_max'):,.2f} per {salary_period}</p>"
             
             if "description" in job:
                 # Truncate description to first 150 characters
@@ -290,5 +293,6 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
 
 
