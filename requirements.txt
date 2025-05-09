@@ -1,0 +1,5 @@
+streamlit
+schedule
+fuzzywuzzy
+requests
+python-Levenshtein
