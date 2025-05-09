@@ -296,12 +296,19 @@ with tab2:
             with col2:
                 job_location = st.text_input("Location", value=user["location"], key="matching_location")
             
+            country = st.selectbox(
+                "Country", 
+                options=["gb", "us", "au", "br", "ca", "de", "fr", "in", "it", "nl", "nz", "pl", "ru", "sg", "za"],
+                index=0,
+                key="matching_country"
+            )
+            
             if st.button("Find Matching Jobs", type="primary"):
                 if not job_title:
                     st.error("Please enter a job title to search")
                 else:
                     with st.spinner(f"Searching for '{job_title}' jobs in '{job_location}'..."):
-                        results = matchmaker.search_available_jobs(job_title, job_location)
+                        results = matchmaker.search_available_jobs(job_title, job_location, country)
                         
                         if results == "No jobs found for the given criteria.":
                             st.error("No jobs found. Please try different search terms.")
@@ -335,9 +342,4 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
-
-
-
-
-
 
