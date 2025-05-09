@@ -144,28 +144,38 @@ class JobMatchmaker:
                 email_body += f"  Apply here: {job['redirect_url']}\n"
             email_body += "\n"
         
-        # Use Resend API to send email
-        conn = http.client.HTTPSConnection("api.resend.com")
-        
-        payload = json.dumps({
-            "from": "jobs@yourdomain.com",
-            "to": user["email"],
-            "subject": "Your Personalized Job Matches",
-            "text": email_body
-        })
-        
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {RESEND_API_KEY}'
-        }
-        
-        conn.request("POST", "/emails", payload, headers)
-        
-        res = conn.getresponse()
-        data = res.read()
-        
-        user["last_notified"] = datetime.now()
-        return f"Notification sent to {user['email']}"
+        try:
+            # Use Resend API to send email
+            conn = http.client.HTTPSConnection("api.resend.com")
+            
+            payload = json.dumps({
+                "from": "onboarding@resend.dev",  # Use Resend's default sender for testing
+                "to": user["email"],
+                "subject": "Your Personalized Job Matches",
+                "text": email_body
+            })
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {RESEND_API_KEY}'
+            }
+            
+            print(f"Sending email to: {user['email']}")
+            conn.request("POST", "/emails", payload, headers)
+            
+            res = conn.getresponse()
+            data = res.read().decode('utf-8')
+            print(f"Email API response: {data}")
+            
+            if res.status != 200:
+                return f"Error sending email: {data}"
+            
+            user["last_notified"] = datetime.now()
+            return f"Notification sent to {user['email']}"
+        except Exception as e:
+            error_msg = f"Error sending email: {str(e)}"
+            print(error_msg)
+            return error_msg
     
     def run_matching_for_all_users(self):
         results = []
@@ -391,7 +401,12 @@ with tab2:
                                 temp_user = user.copy()
                                 temp_user["email"] = email_to_notify
                                 result = matchmaker.send_email_notification(temp_user, matched_jobs[:20])
-                                st.success(f"Email sent to {email_to_notify} with {len(matched_jobs[:20])} job matches")
+                                
+                                if result.startswith("Error"):
+                                    st.error(result)
+                                else:
+                                    st.success(f"Email sent to {email_to_notify} with {len(matched_jobs[:20])} job matches")
+                                    st.info("If you don't see the email, please check your spam folder.")
 
 # Tab 3: Search Available Jobs
 with tab3:
@@ -422,6 +437,9 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
+
+
 
 
 
