@@ -51,18 +51,23 @@ class JobMatchmaker:
             "content-type": "application/json"
         }
         
-        # Make API request
-        url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
-        response = requests.get(url, params=params)
-        data = response.json()
-        
-        # Cache the results
-        self.job_cache[cache_key] = {
-            "timestamp": datetime.now(),
-            "data": data
-        }
-        
-        return data
+        try:
+            # Make API request
+            url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
+            response = requests.get(url, params=params)
+            response.raise_for_status()  # Raise exception for HTTP errors
+            data = response.json()
+            
+            # Cache the results
+            self.job_cache[cache_key] = {
+                "timestamp": datetime.now(),
+                "data": data
+            }
+            
+            return data
+        except Exception as e:
+            print(f"Error fetching jobs: {str(e)}")
+            return {"results": [], "error": str(e)}
     
     def match_jobs_for_user(self, user):
         matched_jobs = []
@@ -242,10 +247,21 @@ with tab3:
     )
     
     if st.button("Search Jobs"):
-        results = matchmaker.search_available_jobs(job_title, job_location, country)
-        st.markdown(results)
+        with st.spinner("Searching for jobs..."):
+            # Add debug info
+            st.info(f"Searching for: {job_title} in {job_location}, {country}")
+            
+            results = matchmaker.search_available_jobs(job_title, job_location, country)
+            
+            # Debug the API response
+            if results == "No jobs found for the given criteria.":
+                st.error("No jobs found. Please try different search terms.")
+            else:
+                st.markdown(results)
 
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
+
 
