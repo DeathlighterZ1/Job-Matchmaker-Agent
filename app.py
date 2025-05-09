@@ -303,17 +303,71 @@ with tab2:
                 key="matching_country"
             )
             
-            if st.button("Find Matching Jobs", type="primary"):
-                if not job_title:
-                    st.error("Please enter a job title to search")
-                else:
-                    with st.spinner(f"Searching for '{job_title}' jobs in '{job_location}'..."):
-                        results = matchmaker.search_available_jobs(job_title, job_location, country)
-                        
-                        if results == "No jobs found for the given criteria.":
-                            st.error("No jobs found. Please try different search terms.")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Find Matching Jobs", type="primary"):
+                    if not job_title:
+                        st.error("Please enter a job title to search")
+                    else:
+                        with st.spinner(f"Searching for '{job_title}' jobs in '{job_location}'..."):
+                            results = matchmaker.search_available_jobs(job_title, job_location, country)
+                            
+                            if isinstance(results, str) and results.startswith("No jobs found"):
+                                st.error("No jobs found. Please try different search terms.")
+                            elif isinstance(results, str) and results.startswith("Error"):
+                                st.error(results)
+                            else:
+                                st.markdown(results, unsafe_allow_html=True)
+            
+            with col2:
+                if st.button("Send Matches to Email", type="secondary"):
+                    with st.spinner(f"Finding matches and sending email to {user['email']}..."):
+                        # Find matching jobs for this user based on the entered criteria
+                        if job_title:
+                            # Use the specific job title entered by user
+                            jobs_data = matchmaker.fetch_jobs(job_title, job_location, country)
+                            if "results" in jobs_data and jobs_data["results"]:
+                                # Process jobs to match user's skills
+                                matched_jobs = []
+                                for job in jobs_data["results"]:
+                                    score = 0
+                                    matched_skills = []
+                                    
+                                    # Match job title
+                                    if "title" in job:
+                                        title_score = fuzz.token_set_ratio(job_title.lower(), job["title"].lower())
+                                        score += title_score * 0.3
+                                    
+                                    # Match skills
+                                    if "description" in job:
+                                        skill_score = 0
+                                        for skill in user["skills"]:
+                                            if skill.lower() in job["description"].lower():
+                                                skill_score += 10
+                                                matched_skills.append(skill)
+                                        score += min(skill_score, 50)
+                                    
+                                    if score > 60:
+                                        matched_jobs.append({
+                                            "job": job,
+                                            "score": score,
+                                            "matched_skills": matched_skills
+                                        })
+                                
+                                # Sort and get top 5
+                                matched_jobs.sort(key=lambda x: x["score"], reverse=True)
+                                matched_jobs = matched_jobs[:5]
+                                
+                                # Send email
+                                result = matchmaker.send_email_notification(user, matched_jobs)
+                                st.success(f"Email sent to {user['email']} with {len(matched_jobs)} job matches")
+                            else:
+                                st.error("No jobs found to send. Try different search terms.")
                         else:
-                            st.markdown(results, unsafe_allow_html=True)
+                            # Use the user's preferred roles
+                            matched_jobs = matchmaker.match_jobs_for_user(user)
+                            result = matchmaker.send_email_notification(user, matched_jobs)
+                            st.success(result)
 
 # Tab 3: Search Available Jobs
 with tab3:
@@ -334,12 +388,19 @@ with tab3:
         with st.spinner("Searching for jobs..."):
             results = matchmaker.search_available_jobs(job_title, job_location, country)
             
-            if results == "No jobs found for the given criteria.":
+            if isinstance(results, str) and results.startswith("No jobs found"):
                 st.error("No jobs found. Please try different search terms.")
+            elif isinstance(results, str) and results.startswith("Error"):
+                st.error(results)
             else:
                 st.markdown(results, unsafe_allow_html=True)
 
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
+
+
+
+
 
