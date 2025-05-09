@@ -19,6 +19,7 @@ print(f"API credentials loaded: Adzuna ID={ADZUNA_APP_ID[:4]}..., Key={ADZUNA_AP
 
 class JobMatchmaker:
     def __init__(self):
+        
         self.users = []
         self.job_cache = {}
     
@@ -177,9 +178,6 @@ class JobMatchmaker:
         st.write(f"Searching for '{query}' in '{location}' ({country})...")
         jobs_data = self.fetch_jobs(query, location, country)
         
-        # Debug the API response
-        st.write(f"API response keys: {list(jobs_data.keys())}")
-        
         if "error" in jobs_data:
             return f"Error: {jobs_data['error']}"
         
@@ -190,21 +188,33 @@ class JobMatchmaker:
         
         results = []
         for job in jobs_data["results"][:10]:  # Limit to top 10 results
-            job_info = f"**{job.get('title', 'Untitled Position')}** at {job.get('company', {}).get('display_name', 'Unknown Company')}\n"
+            # Create a more structured and visually appealing job card
+            job_info = f"""
+            <div style="padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9f9f9;">
+                <h3 style="color: #2c3e50; margin-top: 0;">{job.get('title', 'Untitled Position')}</h3>
+                <h4 style="color: #3498db; margin-top: 5px;">{job.get('company', {}).get('display_name', 'Unknown Company')}</h4>
+                
+                <div style="margin: 10px 0;">
+            """
+            
             if "location" in job and "area" in job["location"]:
-                job_info += f"Location: {', '.join(job['location']['area'])}\n"
+                job_info += f"<p><strong>📍 Location:</strong> {', '.join(job['location']['area'])}</p>"
+            
             if "salary_min" in job and "salary_max" in job:
-                job_info += f"Salary: {job.get('salary_min')} - {job.get('salary_max')} per {job.get('salary_is_predicted', 'year')}\n"
-            if "redirect_url" in job:
-                job_info += f"Apply: {job.get('redirect_url')}\n"
+                job_info += f"<p><strong>💰 Salary:</strong> {job.get('salary_min')} - {job.get('salary_max')} per {job.get('salary_is_predicted', 'year')}</p>"
+            
             if "description" in job:
                 # Truncate description to first 150 characters
                 desc = job["description"][:150] + "..." if len(job["description"]) > 150 else job["description"]
-                job_info += f"Description: {desc}\n"
-            job_info += "---\n"
+                job_info += f"<p><strong>📝 Description:</strong> {desc}</p>"
+            
+            if "redirect_url" in job:
+                job_info += f'<p><a href="{job.get("redirect_url")}" target="_blank" style="background-color: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px;">Apply Now</a></p>'
+            
+            job_info += "</div></div>"
             results.append(job_info)
         
-        return "\n".join(results)
+        return "".join(results)
 
 # Initialize the matchmaker
 matchmaker = JobMatchmaker()
@@ -256,35 +266,29 @@ with tab2:
 # Tab 3: Search Available Jobs
 with tab3:
     st.header("Search for available jobs")
-    job_title = st.text_input("Job Title")
-    job_location = st.text_input("Location")
+    col1, col2 = st.columns(2)
+    with col1:
+        job_title = st.text_input("Job Title")
+    with col2:
+        job_location = st.text_input("Location")
+    
     country = st.selectbox(
         "Country", 
         options=["gb", "us", "au", "br", "ca", "de", "fr", "in", "it", "nl", "nz", "pl", "ru", "sg", "za"],
         index=0
     )
     
-    if st.button("Search Jobs"):
+    if st.button("Search Jobs", type="primary"):
         with st.spinner("Searching for jobs..."):
-            # Add debug info
-            st.info(f"Searching for: {job_title} in {job_location}, {country}")
-            
             results = matchmaker.search_available_jobs(job_title, job_location, country)
             
-            # Debug the API response
             if results == "No jobs found for the given criteria.":
                 st.error("No jobs found. Please try different search terms.")
             else:
-                st.markdown(results)
+                st.markdown(results, unsafe_allow_html=True)
 
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
-
-
-
-
-
-
 
 
