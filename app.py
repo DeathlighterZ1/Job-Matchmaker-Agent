@@ -267,47 +267,65 @@ with tab1:
 # Tab 2: Run Matching
 with tab2:
     st.header("Run Job Matching")
-    if st.button("Run Job Matching"):
-        if not matchmaker.users:
-            st.error("No users added yet. Please add users in the 'Add User' tab first.")
-        else:
-            results = []
-            for user in matchmaker.users:
-                st.subheader(f"Results for {user['name']}")
-                
-                # Display skills in a more visual way
-                skills_html = ""
-                for skill in user['skills']:
-                    skills_html += f'<span style="background-color: #e1f5fe; color: #0277bd; padding: 5px 10px; border-radius: 15px; margin-right: 8px; display: inline-block; margin-bottom: 8px;">{skill}</span>'
-                
-                st.markdown(f"<div style='margin-bottom: 15px;'><strong>Skills:</strong> {skills_html}</div>", unsafe_allow_html=True)
-                
-                matched_jobs = matchmaker.match_jobs_for_user(user)
-                
-                if not matched_jobs:
-                    st.warning(f"No matching jobs found for {user['name']}")
-                else:
-                    for i, match in enumerate(matched_jobs, 1):
-                        job = match["job"]
-                        with st.expander(f"Match #{i}: {job.get('title', 'Untitled Position')} - Score: {match['score']:.1f}%"):
-                            st.write(f"**Company:** {job.get('company', {}).get('display_name', 'Unknown Company')}")
-                            if "location" in job and "area" in job["location"]:
-                                st.write(f"**Location:** {', '.join(job['location']['area'])}")
+    
+    if not matchmaker.users:
+        st.warning("No users added yet. Please add users in the 'Add User' tab first.")
+    else:
+        # Display user selection dropdown
+        user_names = [user["name"] for user in matchmaker.users]
+        selected_user = st.selectbox("Select User", user_names)
+        
+        # Get the selected user
+        user = next((u for u in matchmaker.users if u["name"] == selected_user), None)
+        
+        if user:
+            # Display user's preferred roles as selectable options
+            st.subheader("Preferred Job Roles")
+            selected_role = st.selectbox("Select role to search", user["roles"])
+            
+            if st.button("Find Matching Jobs", type="primary"):
+                with st.spinner(f"Searching for '{selected_role}' jobs in '{user['location']}'..."):
+                    # Use the search_available_jobs method with the selected role
+                    jobs_data = matchmaker.fetch_jobs(selected_role, user["location"])
+                    
+                    if "error" in jobs_data:
+                        st.error(f"Error: {jobs_data['error']}")
+                    elif "results" not in jobs_data or not jobs_data["results"]:
+                        st.error("No jobs found for the given criteria.")
+                    else:
+                        st.success(f"Found {len(jobs_data['results'])} jobs")
+                        
+                        # Format and display results similar to Search Available Jobs tab
+                        results = []
+                        for job in jobs_data["results"][:10]:
+                            job_info = f"""
+                            <div style="padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9f9f9;">
+                                <h3 style="color: #2c3e50; margin-top: 0;">{job.get('title', 'Untitled Position')}</h3>
+                                <h4 style="color: #3498db; margin-top: 5px;">{job.get('company', {}).get('display_name', 'Unknown Company')}</h4>
+                                
+                                <div style="margin: 10px 0;">
+                            """
                             
-                            # Display matched skills with visual styling
-                            if match["matched_skills"]:
-                                matched_skills_html = ""
-                                for skill in match["matched_skills"]:
-                                    matched_skills_html += f'<span style="background-color: #e8f5e9; color: #2e7d32; padding: 5px 10px; border-radius: 15px; margin-right: 8px; display: inline-block; margin-bottom: 8px;">{skill}</span>'
-                                st.markdown(f"<div><strong>Matched Skills:</strong> {matched_skills_html}</div>", unsafe_allow_html=True)
+                            if "location" in job and "area" in job["location"]:
+                                job_info += f"<p><strong>📍 Location:</strong> {', '.join(job['location']['area'])}</p>"
+                            
+                            if "salary_min" in job and "salary_max" in job:
+                                salary_period = job.get('salary_is_predicted', 'year')
+                                if salary_period == "1":
+                                    salary_period = "year"
+                                job_info += f"<p><strong>💰 Salary:</strong> ${job.get('salary_min'):,.2f} - ${job.get('salary_max'):,.2f} per {salary_period}</p>"
+                            
+                            if "description" in job:
+                                desc = job["description"][:150] + "..." if len(job["description"]) > 150 else job["description"]
+                                job_info += f"<p><strong>📝 Description:</strong> {desc}</p>"
                             
                             if "redirect_url" in job:
-                                st.markdown(f'<a href="{job.get("redirect_url")}" target="_blank" style="background-color: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px;">Apply Now</a>', unsafe_allow_html=True)
-                
-                result = matchmaker.send_email_notification(user, matched_jobs)
-                results.append(f"{user['name']}: {result}")
-            
-            st.text_area("Email Notification Results", "\n".join(results), height=100)
+                                job_info += f'<p><a href="{job.get("redirect_url")}" target="_blank" style="background-color: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px;">Apply Now</a></p>'
+                            
+                            job_info += "</div></div>"
+                            results.append(job_info)
+                        
+                        st.markdown("".join(results), unsafe_allow_html=True)
 
 # Tab 3: Search Available Jobs
 with tab3:
@@ -336,6 +354,7 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
 
 
 
