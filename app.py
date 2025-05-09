@@ -290,14 +290,18 @@ with tab2:
         if user:
             # Allow user to type in a job title instead of selecting from dropdown
             st.subheader("Search for Jobs")
-            job_title = st.text_input("Job Title", key="matching_job_title")
+            col1, col2 = st.columns(2)
+            with col1:
+                job_title = st.text_input("Job Title", key="matching_job_title")
+            with col2:
+                job_location = st.text_input("Location", value=user["location"], key="matching_location")
             
             if st.button("Find Matching Jobs", type="primary"):
                 if not job_title:
                     st.error("Please enter a job title to search")
                 else:
-                    with st.spinner(f"Searching for '{job_title}' jobs in '{user['location']}'..."):
-                        results = matchmaker.search_available_jobs(job_title, user["location"])
+                    with st.spinner(f"Searching for '{job_title}' jobs in '{job_location}'..."):
+                        results = matchmaker.search_available_jobs(job_title, job_location)
                         
                         if results == "No jobs found for the given criteria.":
                             st.error("No jobs found. Please try different search terms.")
