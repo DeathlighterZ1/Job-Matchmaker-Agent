@@ -274,7 +274,13 @@ with tab2:
             results = []
             for user in matchmaker.users:
                 st.subheader(f"Results for {user['name']}")
-                st.write(f"Skills: {', '.join(user['skills'])}")
+                
+                # Display skills in a more visual way
+                skills_html = ""
+                for skill in user['skills']:
+                    skills_html += f'<span style="background-color: #e1f5fe; color: #0277bd; padding: 5px 10px; border-radius: 15px; margin-right: 8px; display: inline-block; margin-bottom: 8px;">{skill}</span>'
+                
+                st.markdown(f"<div style='margin-bottom: 15px;'><strong>Skills:</strong> {skills_html}</div>", unsafe_allow_html=True)
                 
                 matched_jobs = matchmaker.match_jobs_for_user(user)
                 
@@ -287,10 +293,16 @@ with tab2:
                             st.write(f"**Company:** {job.get('company', {}).get('display_name', 'Unknown Company')}")
                             if "location" in job and "area" in job["location"]:
                                 st.write(f"**Location:** {', '.join(job['location']['area'])}")
+                            
+                            # Display matched skills with visual styling
                             if match["matched_skills"]:
-                                st.write(f"**Matched Skills:** {', '.join(match['matched_skills'])}")
+                                matched_skills_html = ""
+                                for skill in match["matched_skills"]:
+                                    matched_skills_html += f'<span style="background-color: #e8f5e9; color: #2e7d32; padding: 5px 10px; border-radius: 15px; margin-right: 8px; display: inline-block; margin-bottom: 8px;">{skill}</span>'
+                                st.markdown(f"<div><strong>Matched Skills:</strong> {matched_skills_html}</div>", unsafe_allow_html=True)
+                            
                             if "redirect_url" in job:
-                                st.write(f"**Apply here:** {job['redirect_url']}")
+                                st.markdown(f'<a href="{job.get("redirect_url")}" target="_blank" style="background-color: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px;">Apply Now</a>', unsafe_allow_html=True)
                 
                 result = matchmaker.send_email_notification(user, matched_jobs)
                 results.append(f"{user['name']}: {result}")
@@ -324,6 +336,7 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
 
 
 
