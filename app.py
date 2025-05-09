@@ -296,6 +296,8 @@ with tab2:
             with col2:
                 job_location = st.text_input("Location", value=user["location"], key="matching_location")
             
+            email_to_notify = st.text_input("Email to send results (optional)", value=user["email"])
+            
             country = st.selectbox(
                 "Country", 
                 options=["gb", "us", "au", "br", "ca", "de", "fr", "in", "it", "nl", "nz", "pl", "ru", "sg", "za"],
@@ -384,9 +386,12 @@ with tab2:
                             st.markdown("".join(display_results), unsafe_allow_html=True)
                             
                             # Send email with all matched jobs
-                            with st.spinner(f"Sending job matches to {user['email']}..."):
-                                result = matchmaker.send_email_notification(user, matched_jobs[:20])
-                                st.success(f"Email sent to {user['email']} with {len(matched_jobs[:20])} job matches")
+                            with st.spinner(f"Sending job matches to {email_to_notify}..."):
+                                # Create a temporary user object with the provided email
+                                temp_user = user.copy()
+                                temp_user["email"] = email_to_notify
+                                result = matchmaker.send_email_notification(temp_user, matched_jobs[:20])
+                                st.success(f"Email sent to {email_to_notify} with {len(matched_jobs[:20])} job matches")
 
 # Tab 3: Search Available Jobs
 with tab3:
@@ -417,6 +422,9 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
+
+
 
 
 
