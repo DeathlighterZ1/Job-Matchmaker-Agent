@@ -288,18 +288,21 @@ with tab2:
         user = next((u for u in matchmaker.users if u["name"] == selected_user), None)
         
         if user:
-            # Display user's preferred roles as selectable options
-            st.subheader("Preferred Job Roles")
-            selected_role = st.selectbox("Job Title", user["roles"])
+            # Allow user to type in a job title instead of selecting from dropdown
+            st.subheader("Search for Jobs")
+            job_title = st.text_input("Job Title")
             
             if st.button("Find Matching Jobs", type="primary"):
-                with st.spinner(f"Searching for '{selected_role}' jobs in '{user['location']}'..."):
-                    results = matchmaker.search_available_jobs(selected_role, user["location"])
-                    
-                    if results == "No jobs found for the given criteria.":
-                        st.error("No jobs found. Please try different search terms.")
-                    else:
-                        st.markdown(results, unsafe_allow_html=True)
+                if not job_title:
+                    st.error("Please enter a job title to search")
+                else:
+                    with st.spinner(f"Searching for '{job_title}' jobs in '{user['location']}'..."):
+                        results = matchmaker.search_available_jobs(job_title, user["location"])
+                        
+                        if results == "No jobs found for the given criteria.":
+                            st.error("No jobs found. Please try different search terms.")
+                        else:
+                            st.markdown(results, unsafe_allow_html=True)
 
 # Tab 3: Search Available Jobs
 with tab3:
@@ -328,6 +331,7 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
 
 
 
