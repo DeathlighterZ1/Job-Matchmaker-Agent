@@ -227,6 +227,13 @@ class JobMatchmaker:
 # Initialize the matchmaker
 matchmaker = JobMatchmaker()
 
+# Initialize session state for users if it doesn't exist
+if 'users' not in st.session_state:
+    st.session_state.users = []
+    
+# Load existing users into matchmaker
+matchmaker.users = st.session_state.users
+
 # Schedule daily job matching
 def scheduled_job():
     matchmaker.run_matching_for_all_users()
@@ -262,6 +269,8 @@ with tab1:
     
     if st.button("Add User"):
         result = matchmaker.add_user(name, email, location, roles, skills, min_salary)
+        # Update session state with the new user list
+        st.session_state.users = matchmaker.users
         st.success(result)
 
 # Tab 2: Run Matching
