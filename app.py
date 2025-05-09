@@ -290,7 +290,7 @@ with tab2:
         if user:
             # Allow user to type in a job title instead of selecting from dropdown
             st.subheader("Search for Jobs")
-            job_title = st.text_input("Job Title")
+            job_title = st.text_input("Job Title", key="matching_job_title")
             
             if st.button("Find Matching Jobs", type="primary"):
                 if not job_title:
@@ -309,7 +309,7 @@ with tab3:
     st.header("Search for available jobs")
     col1, col2 = st.columns(2)
     with col1:
-        job_title = st.text_input("Job Title")
+        job_title = st.text_input("Job Title", key="search_job_title")
     with col2:
         job_location = st.text_input("Location")
     
@@ -331,6 +331,7 @@ with tab3:
 # Launch the Streamlit app
 if __name__ == "__main__":
     pass  # Streamlit automatically runs the app
+
 
 
 
